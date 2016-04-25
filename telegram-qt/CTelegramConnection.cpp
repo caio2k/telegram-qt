@@ -1970,6 +1970,9 @@ void CTelegramConnection::processRpcResult(CTelegramStream &stream, quint64 idHi
         case TLValue::ContactsDeleteContacts:
             processingResult = processContactsDeleteContacts(stream, id);
             break;
+        case TLValue::ContactsResolveUsername:
+            processingResult = processContactsResolveUsername(stream, id);
+            break;
         case TLValue::UpdatesGetState:
             processingResult = processUpdatesGetState(stream, id);
             break;
@@ -2352,6 +2355,23 @@ TLValue CTelegramConnection::processContactsDeleteContacts(CTelegramStream &stre
     stream >> result;
 
     return result;
+}
+
+TLValue CTelegramConnection::processContactsResolveUsername(CTelegramStream &stream, quint64 id)
+{
+    TLUser result;
+    stream >> result;
+
+    const QString userName = userNameFromPackage(id);
+
+    if (result.tlType == TLValue::UserSelf) {
+        if (result.username == userName) {
+            emit userNameStatusUpdated(userName, TelegramNamespace::AccountUserNameStatusAccepted);
+        }
+        emit usersReceived(QVector<TLUser>() << result);
+    }
+
+    return result.tlType;
 }
 
 TLValue CTelegramConnection::processUpdatesGetState(CTelegramStream &stream, quint64 id)
@@ -3246,6 +3266,7 @@ QString CTelegramConnection::userNameFromPackage(quint64 id) const
     switch (method) {
     case TLValue::AccountCheckUsername:
     case TLValue::AccountUpdateUsername:
+    case TLValue::ContactsResolveUsername:
         break;
     default:
         return QString();
