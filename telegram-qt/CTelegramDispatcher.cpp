@@ -1233,12 +1233,17 @@ void CTelegramDispatcher::messageActionTimerTimeout()
 
 void CTelegramDispatcher::whenMessageSentInfoReceived(const TLInputPeer &peer, quint64 randomId, TLMessagesSentMessage info)
 {
-    const QString identifier = userIdToIdentifier(peer.userId);
+    const QString identifier = peerToIdentifier(peer);
     QPair<QString, quint64> phoneAndId(identifier, randomId);
 
     m_messagesMap.insert(info.id, phoneAndId);
 
-    emit sentMessageStatusChanged(identifier, info.id, TelegramNamespace::MessageDeliveryStatusSent);
+    emit sentMessageIdReceived(randomId, info.id);
+    emit sentMessageStatusChanged(info.id, TelegramNamespace::MessageDeliveryStatusSent, identifier);
+
+#ifndef TELEGRAMQT_NO_DEPRECATED
+    emit sentMessageStatusChanged(identifier, randomId, TelegramNamespace::MessageDeliveryStatusSent);
+#endif
 
     ensureUpdateState(info.pts, info.seq, info.date);
 }
@@ -1638,6 +1643,14 @@ void CTelegramDispatcher::processUpdate(const TLUpdate &update)
 //        update.peer;
 //        update.notifySettings;
 //        break;
+    case TLValue::UpdateReadHistoryInbox: {
+        const QString identifier = peerToIdentifier(update.peer);
+        if (identifier.isEmpty()) {
+            qDebug() << Q_FUNC_INFO << "Unable to resolve peer" << update.peer;
+        }
+        emit sentMessageStatusChanged(update.maxId, TelegramNamespace::MessageDeliveryStatusRead, identifier);
+        break;
+    }
     default:
         qDebug() << Q_FUNC_INFO << "Update type" << update.tlType.toString() << "is not implemented yet.";
         break;
@@ -1906,13 +1919,13 @@ TLInputUser CTelegramDispatcher::phoneNumberToInputUser(const QString &phoneNumb
 
 QString CTelegramDispatcher::userIdToIdentifier(const quint32 id) const
 {
-    const TLUser *user = m_users.value(id);
+//    const TLUser *user = m_users.value(id);
 
-    if (user) {
-        if (!user->phone.isEmpty()) {
-            return user->phone;
-        }
-    }
+//    if (user) {
+//        if (!user->phone.isEmpty()) {
+//            return user->phone;
+//        }
+//    }
 
     return QString(QLatin1String("user%1")).arg(id);
 }
@@ -1937,17 +1950,33 @@ QString CTelegramDispatcher::peerToIdentifier(const TLPeer &peer) const
     return QString();
 }
 
+QString CTelegramDispatcher::peerToIdentifier(const TLInputPeer &peer) const
+{
+    switch (peer.tlType) {
+    case TLValue::InputPeerChat:
+        return chatIdToIdentifier(telegramChatIdToPublicId(peer.chatId));
+    case TLValue::InputPeerContact:
+    case TLValue::InputPeerForeign:
+        return userIdToIdentifier(peer.userId);
+    default:
+        break;
+    }
+
+    qDebug() << Q_FUNC_INFO << "Unknown peer type";
+    return QString();
+}
+
 quint32 CTelegramDispatcher::identifierToUserId(const QString &identifier) const
 {
     if (identifier.startsWith(QLatin1String("user"))) {
         return identifier.section(QLatin1String("user"), 1).toUInt();
     }
 
-    foreach (const TLUser *user, m_users) {
-        if (user->phone == identifier) {
-            return user->id;
-        }
-    }
+//    foreach (const TLUser *user, m_users) {
+//        if (user->phone == identifier) {
+//            return user->id;
+//        }
+//    }
 
     return 0;
 }

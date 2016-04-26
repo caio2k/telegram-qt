@@ -217,13 +217,15 @@ signals:
     void phoneStatusReceived(const QString &phone, bool registered, bool invited);
     void messageReceived(const QString &contact, const QString &message, TelegramNamespace::MessageType type, quint32 messageId, quint32 flags, quint32 timestamp);
     void chatMessageReceived(quint32 chatId, const QString &contact, const QString &message, TelegramNamespace::MessageType type, quint32 messageId, quint32 flags, quint32 timestamp);
+    void sentMessageStatusChanged(const QString &contact, quint64 messageId, TelegramNamespace::MessageDeliveryStatus status); // Message id is random number
 #endif
 
     void contactStatusChanged(const QString &phone, TelegramNamespace::ContactStatus status);
     void contactTypingStatusChanged(const QString &contact, TelegramNamespace::MessageAction action);
     void contactChatTypingStatusChanged(quint32 publicChatId, const QString &phone, TelegramNamespace::MessageAction action);
 
-    void sentMessageStatusChanged(const QString &phone, quint64 randomMessageId, TelegramNamespace::MessageDeliveryStatus status);
+    void sentMessageIdReceived(quint64 randomId, quint32 resolvedId);
+    void sentMessageStatusChanged(quint32 messageId, TelegramNamespace::MessageDeliveryStatus status, const QString &contact);
 
     void chatAdded(quint32 publichChatId);
     void chatChanged(quint32 publichChatId);
@@ -293,6 +295,7 @@ protected:
     QString userIdToIdentifier(const quint32 id) const;
     QString chatIdToIdentifier(const quint32 id) const;
     QString peerToIdentifier(const TLPeer &peer) const;
+    QString peerToIdentifier(const TLInputPeer &peer) const;
     quint32 identifierToUserId(const QString &identifier) const;
     TLUser *identifierToUser(const QString &identifier) const;
 

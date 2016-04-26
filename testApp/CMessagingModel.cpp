@@ -198,14 +198,26 @@ int CMessagingModel::setMessageMediaData(quint64 messageId, const QVariant &data
     return i;
 }
 
-void CMessagingModel::setMessageDeliveryStatus(const QString &phone, quint64 messageId, TelegramNamespace::MessageDeliveryStatus status)
+void CMessagingModel::setMessageDeliveryStatus(quint32 messageId, TelegramNamespace::MessageDeliveryStatus status)
 {
-    Q_UNUSED(phone);
     for (int i = 0; i < m_messages.count(); ++i) {
-        if (m_messages.at(i).id64 == messageId) {
+        if (m_messages.at(i).id == messageId) {
             m_messages[i].status = status;
 
             QModelIndex messageIndex = index(i, Status);
+            emit dataChanged(messageIndex, messageIndex);
+            break;
+        }
+    }
+}
+
+void CMessagingModel::setResolvedMessageId(quint64 randomId, quint32 resolvedId)
+{
+    for (int i = 0; i < m_messages.count(); ++i) {
+        if (m_messages.at(i).id64 == randomId) {
+            m_messages[i].id = resolvedId;
+
+            QModelIndex messageIndex = index(i, MessageId);
             emit dataChanged(messageIndex, messageIndex);
             break;
         }

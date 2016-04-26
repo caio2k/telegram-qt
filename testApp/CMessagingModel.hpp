@@ -75,7 +75,8 @@ public:
 public slots:
     void addMessage(const SMessage &message);
     int setMessageMediaData(quint64 messageId, const QVariant &data);
-    void setMessageDeliveryStatus(const QString &phone, quint64 messageId, TelegramNamespace::MessageDeliveryStatus status);
+    void setMessageDeliveryStatus(quint32 messageId, TelegramNamespace::MessageDeliveryStatus status);
+    void setResolvedMessageId(quint64 randomId, quint32 resolvedId);
 
 private:
     QList<SMessage> m_messages;
